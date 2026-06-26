@@ -1,5 +1,6 @@
 // Backend base URL 
-const API_BASE_URL = "http://3.109.4.159:8000";
+//const API_BASE_URL = "http://3.109.4.159:8000";
+const API_BASE_URL = "https://airesume.mooo.com";
 
 //  Auth helpers 
 function getToken() {
