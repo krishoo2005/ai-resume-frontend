@@ -107,12 +107,21 @@
     const file = fileInput.files[0];
     const msgEl = document.getElementById("upload-message");
     const resultBox = document.getElementById("result-box");
+    const uploadBtn = document.getElementById("upload-btn");
 
     resultBox.style.display = "none";
     msgEl.textContent = "";
     msgEl.className = "message";
 
-    if (!file) { msgEl.textContent = "Please select a PDF file."; msgEl.className = "message error"; return; }
+    if (!file) {
+      msgEl.textContent = "Please select a PDF file.";
+      msgEl.className = "message error";
+      return;
+    }
+
+    // Disable button to prevent double upload
+    uploadBtn.disabled = true;
+    uploadBtn.textContent = "Uploading...";
 
     const formData = new FormData();
     formData.append("file", file);
@@ -125,10 +134,17 @@
       document.getElementById("doc-id-display").textContent = data.document_id;
       resultBox.style.display = "block";
       localStorage.setItem("lastDocumentId", data.document_id);
+
+      // Reset file input so same file can be re-uploaded intentionally
+      fileInput.value = "";
       loadHistory();
     } catch (err) {
       msgEl.textContent = err.message;
       msgEl.className = "message error";
+    } finally {
+      // Re-enable button after upload completes (success or fail)
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = "Upload document";
     }
   });
 </script>
