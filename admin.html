@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — AI Resume Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- PIN SCREEN -->
+<div id="pin-screen" class="pin-screen">
+  <div class="pin-card">
+    <div class="pin-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    </div>
+    <h1>Admin access</h1>
+    <p>Enter your PIN to continue to the dashboard</p>
+    <label>Admin PIN</label>
+    <input type="password" id="pin-input" placeholder="••••" maxlength="4" style="letter-spacing:4px;">
+    <div id="pin-error" class="pin-error"></div>
+    <button class="pin-btn" onclick="checkPin()">Continue</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none;" class="admin-layout">
+
+  <nav class="admin-navbar">
+    <div class="admin-brand">
+      <div class="admin-brand-dot"></div>
+      AI Resume Analyzer
+      <span class="admin-badge">ADMIN</span>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span id="last-updated" class="last-updated">Loading...</span>
+      <button class="logout-btn" onclick="adminLogout()">Sign out</button>
+    </div>
+  </nav>
+
+  <div class="admin-content">
+
+    <!-- Admin Profile -->
+    <div class="profile-card">
+      <div class="profile-avatar">KA</div>
+      <div class="profile-info">
+        <h2>Krushna Aghade</h2>
+        <p>krushnaaghade1@gmail.com</p>
+        <span class="admin-tag">SUPER ADMIN</span>
+      </div>
+      <div class="profile-meta">
+        <div>AI Resume Analyzer</div>
+        <div style="margin-top:4px;">Full access</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total users</div>
+        <div class="stat-value purple" id="total-users">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total uploads</div>
+        <div class="stat-value green" id="total-docs">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Analyses done</div>
+        <div class="stat-value amber" id="total-analysis">—</div>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-title">Registered users</span>
+        <span class="section-count" id="users-count">0 users</span>
+      </div>
+      <div id="users-list"><div class="empty-state">Loading...</div></div>
+    </div>
+
+    <!-- Recent Uploads -->
+    <div class="section-card">
+      <div class="section-header">
+        <span class="section-title">Recent uploads</span>
+        <span class="section-count">Last 10</span>
+      </div>
+      <div id="docs-list"><div class="empty-state">Loading...</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+  const ADMIN_PIN = "5555";
+
+  function checkPin() {
+    const pin = document.getElementById("pin-input").value;
+    const err = document.getElementById("pin-error");
+    if (pin === ADMIN_PIN) {
+      loginAdmin();
+    } else {
+      err.textContent = "Wrong PIN. Try again.";
+    }
+  }
+
+  document.getElementById("pin-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") checkPin();
+  });
+
+  async function loginAdmin() {
+    try {
+      const token = getToken();
+      if (!token) { window.location.href = "login.html"; return; }
+      document.getElementById("pin-screen").style.display = "none";
+      document.getElementById("dashboard").style.display = "block";
+      loadStats();
+      setInterval(loadStats, 15000);
+    } catch (err) {
+      document.getElementById("pin-error").textContent = "Login failed: " + err.message;
+    }
+  }
+
+  function adminLogout() {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+  }
+
+  function initials(name) {
+    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  }
+
+  async function loadStats() {
+    try {
+      const data = await apiRequest("/admin/stats");
+
+      document.getElementById("total-users").textContent = data.total_users;
+      document.getElementById("total-docs").textContent = data.total_documents;
+      document.getElementById("total-analysis").textContent =
+        data.recent_documents.filter(d => d.status === "COMPLETED").length;
+      document.getElementById("last-updated").textContent =
+        "Updated " + new Date().toLocaleTimeString();
+      document.getElementById("users-count").textContent = data.users.length + " users";
+
+      const usersList = document.getElementById("users-list");
+      if (data.users.length === 0) {
+        usersList.innerHTML = '<div class="empty-state">No users registered yet</div>';
+      } else {
+        usersList.innerHTML = data.users.map(u => `
+          <div class="user-row">
+            <div class="user-avatar">${initials(u.name)}</div>
+            <div>
+              <div class="user-name">${u.name}</div>
+              <div class="user-email">${u.email}</div>
+            </div>
+            <div class="upload-count">${u.total_uploads} uploads</div>
+            <div class="user-id-badge">ID #${u.id}</div>
+          </div>
+        `).join('');
+      }
+
+      const docsList = document.getElementById("docs-list");
+      if (data.recent_documents.length === 0) {
+        docsList.innerHTML = '<div class="empty-state">No uploads yet</div>';
+      } else {
+        docsList.innerHTML = data.recent_documents.map(d => `
+          <div class="doc-row">
+            <div class="doc-icon">📄</div>
+            <div style="flex:1; min-width:0;">
+              <div class="doc-name">${d.filename}</div>
+              <div class="doc-meta">User #${d.user_id} · ${new Date(d.uploaded_at).toLocaleString()}</div>
+            </div>
+            <span class="status-pill ${d.status}">${d.status}</span>
+          </div>
+        `).join('');
+      }
+
+    } catch (err) {
+      console.error("Admin stats error:", err);
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    if (!getToken()) window.location.href = "login.html";
+  });
+</script>
+</body>
+</html>

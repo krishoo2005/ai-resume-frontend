@@ -105,7 +105,18 @@
 </div>
 <script src="api.js"></script>
 <script>
-  if (getToken()) window.location.href = "upload.html";
+  // If already logged in, redirect based on who they are
+  if (getToken()) {
+    apiRequest("/me").then(me => {
+      if (me.email === "krushnaaghade1@gmail.com") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "upload.html";
+      }
+    }).catch(() => {
+      localStorage.removeItem("token");
+    });
+  }
 
   const loginSection = document.getElementById("login-section");
   const registerSection = document.getElementById("register-section");
@@ -135,7 +146,14 @@
     try {
       const data = await apiRequest("/login", { method: "POST", body: { email, password } });
       localStorage.setItem("token", data.access_token);
-      window.location.href = "upload.html";
+
+      // Check who logged in — admin goes to dashboard, others go to upload
+      const me = await apiRequest("/me");
+      if (me.email === "krushnaaghade1@gmail.com") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "upload.html";
+      }
     } catch (err) { msg("login-message", err.message, "error"); }
   });
 
