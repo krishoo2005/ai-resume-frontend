@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Resume Analyzer — Upload</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="navbar">
+  <div class="brand"><span class="brand-dot"></span>AI Resume Analyzer</div>
+  <nav>
+    <a href="upload.html" class="active">Upload</a>
+    <a href="chat.html">Ask AI</a>
+    <a href="resume.html">Resume</a>
+    <button id="logout-btn">Logout</button>
+  </nav>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h1>Upload a document</h1>
+      <p>Upload a PDF to start asking questions or run a resume analysis. Max 10 MB.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-label">Upload PDF</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-label">Go to Ask or Resume</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-label">Get AI answer</div>
+      </div>
+    </div>
+
+    <label for="file-input" style="margin-top:20px;">PDF file</label>
+    <input type="file" id="file-input" accept="application/pdf">
+
+    <button class="primary" id="upload-btn">Upload document</button>
+
+    <div id="upload-message" class="message"></div>
+
+    <div id="result-box" style="display:none; margin-top:16px;">
+      <div class="doc-context">
+        <div>
+          <div style="font-weight:600; font-size:13px;" id="uploaded-filename"></div>
+          <div style="font-size:12px; color:var(--primary); margin-top:2px;">Document ID: <strong id="doc-id-display"></strong></div>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <a href="chat.html" style="font-size:12px; font-weight:600; color:var(--primary);">Ask a question →</a>
+          <a href="resume.html" style="font-size:12px; font-weight:600; color:var(--primary);">Analyze resume →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="history-card" style="margin-top:16px;">
+    <div class="section-header">
+      <h2>Your documents</h2>
+    </div>
+    <div id="doc-list">
+      <div class="empty-state">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+  requireAuth();
+  document.getElementById("logout-btn").addEventListener("click", logout);
+
+  async function loadHistory() {
+    const listEl = document.getElementById("doc-list");
+    try {
+      const docs = await apiRequest("/documents");
+      if (!docs || docs.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">No documents yet.<br>Upload your first PDF above.</div>';
+        return;
+      }
+      listEl.innerHTML = docs.map(doc => `
+        <div class="doc-row">
+          <div style="min-width:0;">
+            <div class="doc-name">${doc.filename}</div>
+            <div class="doc-meta">ID: ${doc.document_id}</div>
+          </div>
+          <span class="status-badge ${doc.status}"><span class="dot"></span>${doc.status}</span>
+        </div>
+      `).join("");
+    } catch (err) {
+      listEl.innerHTML = '<div class="empty-state" style="color:var(--error);">Failed to load documents.</div>';
+    }
+  }
+
+  loadHistory();
+
+  document.getElementById("upload-btn").addEventListener("click", async () => {
+    const fileInput = document.getElementById("file-input");
+    const file = fileInput.files[0];
+    const msgEl = document.getElementById("upload-message");
+    const resultBox = document.getElementById("result-box");
+
+    resultBox.style.display = "none";
+    msgEl.textContent = "";
+    msgEl.className = "message";
+
+    if (!file) { msgEl.textContent = "Please select a PDF file."; msgEl.className = "message error"; return; }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const data = await apiRequest("/upload", { method: "POST", body: formData, isForm: true });
+      msgEl.textContent = "Uploaded successfully.";
+      msgEl.className = "message success";
+      document.getElementById("uploaded-filename").textContent = data.filename;
+      document.getElementById("doc-id-display").textContent = data.document_id;
+      resultBox.style.display = "block";
+      localStorage.setItem("lastDocumentId", data.document_id);
+      loadHistory();
+    } catch (err) {
+      msgEl.textContent = err.message;
+      msgEl.className = "message error";
+    }
+  });
+</script>
+</body>
+</html>

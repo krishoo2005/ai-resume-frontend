@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI RESUME ANALYZER — Sign in</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="auth-layout">
+
+  <div class="auth-visual">
+    <svg class="auth-decor" viewBox="0 0 500 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <rect x="30" y="100" width="180" height="240" rx="12" fill="white" transform="rotate(-12 120 220)"/>
+      <line x1="70" y1="155" x2="175" y2="155" stroke="white" stroke-width="8" transform="rotate(-12 120 220)"/>
+      <line x1="70" y1="185" x2="175" y2="185" stroke="white" stroke-width="6" transform="rotate(-12 120 220)"/>
+      <line x1="70" y1="210" x2="145" y2="210" stroke="white" stroke-width="6" transform="rotate(-12 120 220)"/>
+      <rect x="280" y="420" width="200" height="260" rx="12" fill="white" transform="rotate(8 380 550)"/>
+      <circle cx="400" cy="700" r="120" fill="white"/>
+      <circle cx="80" cy="750" r="80" fill="white"/>
+    </svg>
+
+    <div class="auth-brand">
+      <span class="dot"></span>
+      AI RESUME ANALYZER
+    </div>
+
+    <div class="auth-pitch">
+      <h2>Upload. Ask. Analyze.</h2>
+      <p>AI-powered document intelligence — ask questions about any PDF or get an instant resume review.</p>
+
+      <div class="auth-features">
+        <div class="feature">
+          <span class="icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </span>
+          Upload any PDF — documents, reports, resumes
+        </div>
+        <div class="feature">
+          <span class="icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </span>
+          Ask questions and get AI-generated answers
+        </div>
+        <div class="feature">
+          <span class="icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </span>
+          ATS resume analysis with improvement tips
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-form-panel">
+    <div class="card">
+
+      <div id="login-section">
+        <h1>Welcome back</h1>
+        <p class="subtitle">Sign in to your AI Resume Analyser account</p>
+
+        <label for="login-email">Email address</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="Enter your password" autocomplete="current-password">
+
+        <button class="primary" id="login-btn">Sign in</button>
+
+        <div class="link-row">
+          No account? <a href="#" id="show-register">Create New Account.</a>
+        </div>
+
+        <div id="login-message" class="message"></div>
+      </div>
+
+      <div id="register-section" style="display:none;">
+        <h1>Create account</h1>
+        <p class="subtitle">Free to use — no credit card required</p>
+
+        <label for="register-name">Full name</label>
+        <input type="text" id="register-name" placeholder="Your name" autocomplete="name">
+
+        <label for="register-email">Email address</label>
+        <input type="email" id="register-email" placeholder="you@example.com" autocomplete="email">
+
+        <label for="register-password">Password</label>
+        <input type="password" id="register-password" placeholder="Create a password" autocomplete="new-password">
+
+        <button class="primary" id="register-btn">Create account</button>
+
+        <div class="link-row">
+          Already have an account? <a href="#" id="show-login">Sign in</a>
+        </div>
+
+        <div id="register-message" class="message"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+<script src="api.js"></script>
+<script>
+  if (getToken()) window.location.href = "upload.html";
+
+  const loginSection = document.getElementById("login-section");
+  const registerSection = document.getElementById("register-section");
+
+  document.getElementById("show-register").addEventListener("click", e => {
+    e.preventDefault();
+    loginSection.style.display = "none";
+    registerSection.style.display = "block";
+  });
+
+  document.getElementById("show-login").addEventListener("click", e => {
+    e.preventDefault();
+    registerSection.style.display = "none";
+    loginSection.style.display = "block";
+  });
+
+  function msg(id, text, type) {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = "message " + type;
+  }
+
+  document.getElementById("login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+    if (!email || !password) { msg("login-message", "Please fill in all fields.", "error"); return; }
+    try {
+      const data = await apiRequest("/login", { method: "POST", body: { email, password } });
+      localStorage.setItem("token", data.access_token);
+      window.location.href = "upload.html";
+    } catch (err) { msg("login-message", err.message, "error"); }
+  });
+
+  document.getElementById("register-btn").addEventListener("click", async () => {
+    const name = document.getElementById("register-name").value.trim();
+    const email = document.getElementById("register-email").value.trim();
+    const password = document.getElementById("register-password").value;
+    if (!name || !email || !password) { msg("register-message", "Please fill in all fields.", "error"); return; }
+    try {
+      await apiRequest("/users", { method: "POST", body: { name, email, password } });
+      msg("register-message", "Account created — you can now sign in.", "success");
+      setTimeout(() => {
+        registerSection.style.display = "none";
+        loginSection.style.display = "block";
+        document.getElementById("login-email").value = email;
+      }, 1400);
+    } catch (err) { msg("register-message", err.message, "error"); }
+  });
+</script>
+</body>
+</html>

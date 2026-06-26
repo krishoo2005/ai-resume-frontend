@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Resume Analyzer — Ask AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="navbar">
+  <div class="brand"><span class="brand-dot"></span>AI Resume Analyzer</div>
+  <nav>
+    <a href="upload.html">Upload</a>
+    <a href="chat.html" class="active">Ask AI</a>
+    <a href="resume.html">Resume</a>
+    <button id="logout-btn">Logout</button>
+  </nav>
+</div>
+
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      <h1>Ask about a document</h1>
+      <p>Select one of your uploaded PDFs and ask any question — the AI will read it and respond.</p>
+    </div>
+
+    <label for="doc-select">Select document</label>
+    <select id="doc-select">
+      <option value="">Loading your documents...</option>
+    </select>
+    <div id="no-docs-msg" class="message" style="display:none;"></div>
+
+    <label for="question" style="margin-top:18px;">Your question</label>
+    <textarea id="question" placeholder="e.g. What are the key findings? Summarise in 3 points."></textarea>
+
+    <button class="primary" id="ask-btn">Ask AI</button>
+
+    <div id="message" class="message"></div>
+
+    <div id="status-row" style="display:none; margin-top:14px;">
+      <span class="status-badge" id="status-badge"><span class="dot"></span><span id="status-text">PENDING</span></span>
+      <span style="font-size:12px; color:var(--text-2); margin-left:10px;" id="status-hint">Processing your document...</span>
+    </div>
+
+    <div id="result-box" class="result-box" style="display:none;"></div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script>
+  requireAuth();
+  document.getElementById("logout-btn").addEventListener("click", logout);
+
+  const docSelect = document.getElementById("doc-select");
+  const noDocsMsg = document.getElementById("no-docs-msg");
+
+  async function loadDocuments() {
+    try {
+      const docs = await apiRequest("/documents");
+      if (!docs || docs.length === 0) {
+        docSelect.style.display = "none";
+        noDocsMsg.innerHTML = 'No documents yet. <a href="upload.html">Upload one first →</a>';
+        noDocsMsg.className = "message info";
+        noDocsMsg.style.display = "block";
+        return;
+      }
+      docSelect.innerHTML = "";
+      docs.forEach(doc => {
+        const o = document.createElement("option");
+        o.value = doc.document_id;
+        o.textContent = `${doc.filename}  (ID: ${doc.document_id})`;
+        docSelect.appendChild(o);
+      });
+      const lastId = localStorage.getItem("lastDocumentId");
+      if (lastId) docSelect.value = lastId;
+    } catch (err) {
+      docSelect.innerHTML = "<option value=''>Failed to load documents</option>";
+    }
+  }
+
+  loadDocuments();
+
+  document.getElementById("ask-btn").addEventListener("click", async () => {
+    const documentId = parseInt(docSelect.value, 10);
+    const question = document.getElementById("question").value.trim();
+    const msgEl = document.getElementById("message");
+    const statusRow = document.getElementById("status-row");
+    const statusBadge = document.getElementById("status-badge");
+    const statusText = document.getElementById("status-text");
+    const statusHint = document.getElementById("status-hint");
+    const resultBox = document.getElementById("result-box");
+    const askBtn = document.getElementById("ask-btn");
+
+    msgEl.textContent = ""; msgEl.className = "message";
+    resultBox.style.display = "none";
+    statusRow.style.display = "none";
+
+    if (!documentId) { msgEl.textContent = "Please select a document."; msgEl.className = "message error"; return; }
+    if (!question) { msgEl.textContent = "Please enter a question."; msgEl.className = "message error"; return; }
+
+    askBtn.disabled = true;
+    localStorage.setItem("lastDocumentId", documentId);
+
+    try {
+      const data = await apiRequest("/chat", { method: "POST", body: { document_id: documentId, question } });
+      statusRow.style.display = "block";
+      updateStatusBadge(statusBadge, statusText, data.status);
+
+      pollStatus(documentId, statusData => {
+        updateStatusBadge(statusBadge, statusText, statusData.status);
+        if (statusData.status === "PROCESSING") statusHint.textContent = "AI is reading the document...";
+        if (statusData.status === "COMPLETED") {
+          statusHint.textContent = "Done.";
+          resultBox.textContent = statusData.result;
+          resultBox.style.display = "block";
+          askBtn.disabled = false;
+        } else if (statusData.status === "FAILED") {
+          statusHint.textContent = "";
+          msgEl.textContent = statusData.error || "Processing failed.";
+          msgEl.className = "message error";
+          askBtn.disabled = false;
+        }
+      });
+    } catch (err) {
+      msgEl.textContent = err.message; msgEl.className = "message error"; askBtn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
