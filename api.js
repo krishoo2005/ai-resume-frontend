@@ -1,5 +1,4 @@
 // Backend base URL 
-//const API_BASE_URL = "http://3.109.4.159:8000";
 const API_BASE_URL = "https://airesume.mooo.com";
 
 //  Auth helpers 
@@ -14,13 +13,23 @@ function requireAuth() {
 }
 
 function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("lastDocumentId");
-  window.location.href = "login.html";
+  const token = getToken();
+  if (token) {
+    fetch(`${API_BASE_URL}/logout`, {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${token}` }
+    }).finally(() => {
+      localStorage.removeItem("token");
+      localStorage.removeItem("lastDocumentId");
+      window.location.href = "login.html";
+    });
+  } else {
+    localStorage.removeItem("token");
+    window.location.href = "login.html";
+  }
 }
 
-//Core request helper 
-// Handles JSON requests by default. Pass isForm: true for file uploads.
+// Core request helper 
 async function apiRequest(path, { method = "GET", body, isForm = false } = {}) {
   const headers = {};
   const token = getToken();
@@ -52,9 +61,7 @@ async function apiRequest(path, { method = "GET", body, isForm = false } = {}) {
   return data;
 }
 
-//Status polling
-// Calls /status/{documentId} every intervalMs until COMPLETED or FAILED.
-// onUpdate is called on every poll with the latest status data.
+// Status polling
 function pollStatus(documentId, onUpdate, intervalMs = 2000) {
   const poll = async () => {
     try {
